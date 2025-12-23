@@ -43,10 +43,16 @@
       #error-overlay {
         display: none; position: fixed; inset: 0; z-index: 100;
         background: rgba(0,0,0,0.9); color: #ff5555; padding: 20px;
-        font-family: monospace; overflow: auto; white-space: pre-wrap;
+        font-family: monospace; overflow: auto; white-space: pre-wrap; font-size: 14px;
       }
     </style>
-    <!-- Fixed Import Map: Use Stable React 18 -->
+    
+    <!-- IMPORTANT: Polyfill process for browser environment to prevent ReferenceErrors -->
+    <script>
+      window.process = { env: { NODE_ENV: 'production' } };
+    </script>
+
+    <!-- Fixed Import Map: Strictly React 18.2.0 -->
     <script type="importmap">
 {
   "imports": {
@@ -68,11 +74,12 @@
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
         </svg>
-        <p class="text-sm font-mono">Initializing LifeOS...</p>
+        <p class="text-sm font-mono">Loading LifeOS...</p>
         <p id="local-warning" class="text-xs text-red-400 mt-4 hidden text-center max-w-md px-4">
-           Warning: It looks like you are opening this file directly (file://). <br/>
-           This app requires a web server (http:// or https://) to load modules.<br/>
-           Please use "Live Server" in VS Code or run "python -m http.server".
+           <strong>WARNING:</strong> You are opening this file via <code>file://</code>.<br/>
+           Browser security blocks loading scripts this way.<br/>
+           <br/>
+           Please run a local server (e.g. <code>python -m http.server</code>) or use VS Code "Live Server".
         </p>
     </div>
 
@@ -83,23 +90,37 @@
 
     <!-- Error Trapping Script -->
     <script>
-      // Show warning if opening via file://
+      // 1. Detect file protocol
       if (window.location.protocol === 'file:') {
         document.getElementById('local-warning').classList.remove('hidden');
       }
 
+      // 2. Global Error Handler
       window.onerror = function(msg, source, lineno, colno, error) {
         const overlay = document.getElementById('error-overlay');
+        const loading = document.getElementById('app-loading');
+        if(loading) loading.style.display = 'none';
+        
         overlay.style.display = 'block';
-        overlay.innerText = `CRITICAL ERROR:\n\n${msg}\n\nSource: ${source}:${lineno}:${colno}\n\n${error ? error.stack : ''}`;
-        document.getElementById('app-loading').style.display = 'none';
+        overlay.innerHTML = `<strong>Runtime Error:</strong><br/>${msg}<br/><br/>
+                             <small>${source}:${lineno}:${colno}</small><br/>
+                             <pre style="background:#222; padding:10px; margin-top:10px; border-radius:5px; overflow-x:auto;">${error ? error.stack : 'No stack trace'}</pre>`;
+        return false;
       };
+      
+      // 3. Catch Unhandled Promise Rejections (common in async code)
+      window.onunhandledrejection = function(event) {
+        const overlay = document.getElementById('error-overlay');
+        const loading = document.getElementById('app-loading');
+        if(loading) loading.style.display = 'none';
 
-      // Hide loading screen when React mounts (we will rely on React replacing the root content, 
-      // but strictly we can remove the loading div in the main script)
+        overlay.style.display = 'block';
+        overlay.innerHTML = `<strong>Async Error (Promise Rejection):</strong><br/>${event.reason}`;
+      };
     </script>
 
     <!-- App Script -->
+    <!-- Note: We use type="text/babel" so Babel Standalone compiles it in browser -->
     <script type="text/babel" data-type="module" data-presets="typescript,react" src="index.tsx"></script>
   </body>
 </html>

@@ -4,7 +4,7 @@ import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import * as Icons from 'lucide-react';
 
 // --- Global Setup ---
-// Remove the loading spinner when the script runs
+// Remove the loading spinner when the React app successfully mounts
 const hideLoader = () => {
     const loader = document.getElementById('app-loading');
     if (loader) loader.style.display = 'none';
@@ -19,7 +19,7 @@ const getApiKey = () => {
         const stored = localStorage.getItem('lifeos_google_api_key');
         if (stored && stored.trim() !== '') return stored;
     }
-    // 2. Try Environment Variable (safe check)
+    // 2. Try Environment Variable (safe check with shim)
     try {
         // @ts-ignore
         if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
