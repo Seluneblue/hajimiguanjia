@@ -3,6 +3,13 @@ import { createRoot } from 'react-dom/client';
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import * as Icons from 'lucide-react';
 
+// --- Global Setup ---
+// Remove the loading spinner when the script runs
+const hideLoader = () => {
+    const loader = document.getElementById('app-loading');
+    if (loader) loader.style.display = 'none';
+};
+
 // --- Constants & Configuration ---
 
 // Helper to get API Key safely in browser environment
@@ -12,7 +19,7 @@ const getApiKey = () => {
         const stored = localStorage.getItem('lifeos_google_api_key');
         if (stored && stored.trim() !== '') return stored;
     }
-    // 2. Try Environment Variable (if available during build/preview)
+    // 2. Try Environment Variable (safe check)
     try {
         // @ts-ignore
         if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
@@ -20,7 +27,7 @@ const getApiKey = () => {
             return process.env.API_KEY;
         }
     } catch (e) {
-        // process is not defined in browser, ignore
+        // ignore
     }
     return undefined;
 };
@@ -166,8 +173,6 @@ const INITIAL_SCHEMAS: Record<string, FieldSchema[]> = {
   ])
 };
 
-// --- Prompts ---
-
 const DEFAULT_CHAT_INSTRUCTIONS = `You are a friendly, empathetic AI assistant in a personal "LifeOS" app.
 Your user interacts with you to record their life, emotions, work, and health.
 Style: Warm, encouraging, concise, and natural. Use Chinese.
@@ -272,8 +277,11 @@ interface ChatSettings {
 // --- Components ---
 
 const IconComponent = ({ name, className }: { name: string; className?: string }) => {
-  // Use a safer check for dynamic icon access
-  const LucideIcon = (Icons as any)[name] as React.ElementType | undefined;
+  // Safe icon access for ESM environments
+  const iconName = name as keyof typeof Icons;
+  const LucideIcon = Icons[iconName] as React.ElementType | undefined;
+  
+  // Fallback to Hash if not found
   if (!LucideIcon) return <Icons.Hash className={className} />;
   return <LucideIcon className={className} />;
 };
@@ -696,6 +704,11 @@ const DashboardView = ({
 };
 
 export default function Index() {
+  // Hide loader upon mount
+  useEffect(() => {
+      hideLoader();
+  }, []);
+
   // State: Data
   const [entries, setEntries] = useState<Entry[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);

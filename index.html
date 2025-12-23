@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Gemini LifeOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Add Babel Standalone to compile TSX in browser -->
+    <!-- Add Babel Standalone -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script>
       tailwind.config = {
@@ -26,44 +26,34 @@
       }
     </script>
     <style>
-      /* Custom scrollbar for webkit */
-      ::-webkit-scrollbar {
-        width: 4px;
-        height: 4px;
+      ::-webkit-scrollbar { width: 4px; height: 4px; }
+      ::-webkit-scrollbar-track { background: #1a202c; }
+      ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #718096; }
+      .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      
+      /* Loading & Error Styles */
+      #app-loading {
+        position: fixed; inset: 0; display: flex; flex-direction: column; 
+        align-items: center; justify-content: center; background: #0d1117; color: #4a5568; z-index: 50;
       }
-      ::-webkit-scrollbar-track {
-        background: #1a202c; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #4a5568; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #718096; 
-      }
-      .animate-fade-in {
-        animation: fadeIn 0.3s ease-out;
-      }
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      /* Hide scrollbar for clean mobile look but allow scroll */
-      .no-scrollbar::-webkit-scrollbar {
-          display: none;
-      }
-      .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
+      #error-overlay {
+        display: none; position: fixed; inset: 0; z-index: 100;
+        background: rgba(0,0,0,0.9); color: #ff5555; padding: 20px;
+        font-family: monospace; overflow: auto; white-space: pre-wrap;
       }
     </style>
-  <script type="importmap">
+    <!-- Fixed Import Map: Use Stable React 18 -->
+    <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
     "@google/genai": "https://esm.sh/@google/genai@0.1.1",
-    "lucide-react": "https://esm.sh/lucide-react@0.294.0",
+    "lucide-react": "https://esm.sh/lucide-react@0.303.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/"
   }
@@ -71,9 +61,45 @@
 </script>
 </head>
   <body class="bg-gray-950 text-gray-100 font-sans antialiased overflow-hidden h-dvh w-screen touch-manipulation">
+    
+    <!-- Loading State -->
+    <div id="app-loading">
+        <svg class="animate-spin h-8 w-8 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="text-sm font-mono">Initializing LifeOS...</p>
+        <p id="local-warning" class="text-xs text-red-400 mt-4 hidden text-center max-w-md px-4">
+           Warning: It looks like you are opening this file directly (file://). <br/>
+           This app requires a web server (http:// or https://) to load modules.<br/>
+           Please use "Live Server" in VS Code or run "python -m http.server".
+        </p>
+    </div>
+
+    <!-- Error Overlay -->
+    <div id="error-overlay"></div>
+
     <div id="root" class="h-full w-full"></div>
-    <!-- Changed to text/babel for in-browser compilation -->
-    <!-- Removed leading slash from src to support GitHub Pages sub-paths -->
+
+    <!-- Error Trapping Script -->
+    <script>
+      // Show warning if opening via file://
+      if (window.location.protocol === 'file:') {
+        document.getElementById('local-warning').classList.remove('hidden');
+      }
+
+      window.onerror = function(msg, source, lineno, colno, error) {
+        const overlay = document.getElementById('error-overlay');
+        overlay.style.display = 'block';
+        overlay.innerText = `CRITICAL ERROR:\n\n${msg}\n\nSource: ${source}:${lineno}:${colno}\n\n${error ? error.stack : ''}`;
+        document.getElementById('app-loading').style.display = 'none';
+      };
+
+      // Hide loading screen when React mounts (we will rely on React replacing the root content, 
+      // but strictly we can remove the loading div in the main script)
+    </script>
+
+    <!-- App Script -->
     <script type="text/babel" data-type="module" data-presets="typescript,react" src="index.tsx"></script>
   </body>
 </html>
